@@ -22,7 +22,7 @@ public class LotService {
     }
 
     public Mono<Car> release(String registrationNumber) {
-        return this.carDao.delete(registrationNumber);
+        return null;
     }
 
     @Autowired
