@@ -12,6 +12,7 @@
     <description>A single repo for all the system design questions that I attempt</description>
     <modules>
         <module>snakes-and-ladders</module>
+        <module>parking-lot</module>
     </modules>
 
 </project>
