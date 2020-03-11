@@ -2,11 +2,14 @@ package com.aditapillai.projects.parkinglot.runners;
 
 import com.aditapillai.projects.parkinglot.models.Car;
 import com.aditapillai.projects.parkinglot.services.LotService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import java.io.InputStreamReader;
 public class CLI implements CommandLineRunner {
     private LotService service;
     private ApplicationContext context;
+    private ObjectMapper mapper;
 
     @Override
     public void run(String... args) throws Exception {
@@ -25,14 +29,21 @@ public class CLI implements CommandLineRunner {
         while (selection != 4) {
             System.out.println("1: Allocate\n2: Register\n3: Release\n4: Quit");
             selection = Integer.parseInt(reader.readLine());
-            System.out.println(this.processSelection(selection, reader));
+            this.processSelection(selection, reader)
+                .subscribe(result -> {
+                    try {
+                        System.out.println(this.mapper.writeValueAsString(result));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                });
         }
 
         SpringApplication.exit(context);
     }
 
-    private Object processSelection(int selection, BufferedReader reader) throws IOException {
-        Object result = null;
+    private Mono processSelection(int selection, BufferedReader reader) throws IOException {
+        Mono result = Mono.just("");
 
         switch (selection) {
             case 1:
@@ -60,5 +71,10 @@ public class CLI implements CommandLineRunner {
     @Autowired
     public void setContext(ApplicationContext context) {
         this.context = context;
+    }
+
+    @Autowired
+    public void setMapper(ObjectMapper mapper) {
+        this.mapper = mapper;
     }
 }
