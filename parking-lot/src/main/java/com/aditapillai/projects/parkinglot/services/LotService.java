@@ -6,6 +6,7 @@ import com.aditapillai.projects.parkinglot.models.Car;
 import com.aditapillai.projects.parkinglot.models.Slot;
 import com.aditapillai.projects.parkinglot.utils.LotUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -19,6 +20,8 @@ public class LotService {
     private SlotDao slotDao;
     private CarDao carDao;
     private CacheService cache;
+    @Value("${lot.max-slots:10}")
+    private int maxSlotsPerLevel;
 
     /**
      * Allocate a parking slot for the incoming car with the given registration number
@@ -81,7 +84,7 @@ public class LotService {
 
         }
 
-        if (nextSlotNumber < 10) {
+        if (nextSlotNumber <= maxSlotsPerLevel) {
             nextSlot = this.cache.isAvailable(nextSlotNumber, level)
                                  .filter(result -> result)
                                  .doOnNext(result -> this.cache.setUnavailable(nextSlotNumber, level))
