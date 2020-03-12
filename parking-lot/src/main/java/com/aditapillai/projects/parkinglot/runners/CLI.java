@@ -38,7 +38,6 @@ public class CLI implements CommandLineRunner {
                     }
                 });
         }
-
         SpringApplication.exit(context);
     }
 

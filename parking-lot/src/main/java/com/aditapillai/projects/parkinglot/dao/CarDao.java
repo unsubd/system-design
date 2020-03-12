@@ -12,14 +12,26 @@ import reactor.core.publisher.Mono;
 public class CarDao {
     private ReactiveMongoOperations mongoOperations;
 
+    /**
+     * Save the car into the DB
+     *
+     * @param car to be saved
+     * @return the saved car as stored in the DB
+     */
     public Mono<Car> save(Car car) {
         return this.mongoOperations.save(car);
     }
 
-    public Mono<Car> delete(String registrationNumber) {
+    /**
+     * Delete a car from the DB
+     *
+     * @param carRegistrationNumber unique registration number of the car
+     * @return the deleted car
+     */
+    public Mono<Car> delete(String carRegistrationNumber) {
         Query query = new Query();
         query.addCriteria(Criteria.where("registrationNumber")
-                                  .is(registrationNumber));
+                                  .is(carRegistrationNumber));
         return this.mongoOperations.findAndRemove(query, Car.class);
     }
 
