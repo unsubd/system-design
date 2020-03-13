@@ -31,11 +31,12 @@ public class LotService {
      * @return the allocated slot
      */
     public Mono<Slot> allocate(String registrationNumber) {
+        final String registrationNumberUpperCase = registrationNumber.toUpperCase();
         int number = LotUtils.getNumber(registrationNumber);
 
         return this.slotDao.findOccupiedSlots(number)
                            .flatMap(slots -> this.getAvailableSlot(slots, number))
-                           .flatMap(slot -> this.slotDao.bookSlot(slot, registrationNumber, number)
+                           .flatMap(slot -> this.slotDao.bookSlot(slot, registrationNumberUpperCase, number)
                                                         .doOnError(error -> this.cache.setAvailable(slot.getSlotNumber()
                                                                 , slot.getLevel())));
 
@@ -146,12 +147,13 @@ public class LotService {
      * @return the car that was released
      */
     public Mono<Car> release(String registrationNumber) {
+        String registrationNumberUpperCase = registrationNumber.toUpperCase();
         if (!LotUtils.registrationNumberPattern.asPredicate()
                                                .test(registrationNumber)) {
             return Mono.error(() -> new RuntimeException(String.format("Invalid Registration number: %s", registrationNumber)));
         }
         return this.slotDao.unallocateSlotFor(registrationNumber)
-                           .flatMap(noResult -> this.carDao.delete(registrationNumber));
+                           .flatMap(noResult -> this.carDao.delete(registrationNumberUpperCase));
     }
 
     @Autowired

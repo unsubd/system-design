@@ -29,7 +29,7 @@ public class SlotDao {
      *
      * @param carRegistrationNumber of the car for which the parking space needs to be freed
      */
-    public Mono<Void> unallocateSlotFor(String carRegistrationNumber) {
+    public Mono<Boolean> unallocateSlotFor(String carRegistrationNumber) {
         Query query = new Query();
         query.addCriteria(Criteria.where(REGISTRATION_NUMBER)
                                   .is(carRegistrationNumber));
@@ -39,7 +39,7 @@ public class SlotDao {
               .unset(VEHICLE_NUMBER);
 
         return this.mongoOperations.updateFirst(query, update, Slot.class)
-                                   .flatMap(result -> Mono.empty());
+                                   .map(result -> true);
     }
 
     /**
