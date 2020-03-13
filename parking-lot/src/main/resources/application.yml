@@ -6,4 +6,5 @@ spring:
       database: parkinglot
 
 lot:
-  max-slots: 12
+  levels: 5
+  slots-per-level: 10

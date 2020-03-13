@@ -32,9 +32,9 @@ public class SlotDao {
         query.addCriteria(Criteria.where("registrationNumber")
                                   .is(carRegistrationNumber));
         Update update = new Update();
-        update.set("registrationNumber", null)
+        update.unset("registrationNumber")
               .set("available", true)
-              .set("vehicleNumber", null);
+              .unset("vehicleNumber");
 
         return this.mongoOperations.updateFirst(query, update, Slot.class)
                                    .flatMap(result -> Mono.empty());
@@ -76,11 +76,19 @@ public class SlotDao {
         slot.setRegistrationNumber(registrationNumber);
 
         Update update = new Update();
-        update.set("available", false)
+        update.set("available", slot.isAvailable())
               .set("registrationNumber", registrationNumber)
-              .set("vehicleNumber", number);
+              .set("vehicleNumber", number)
+              .set("slotNumber", slot.getSlotNumber())
+              .set("level", slot.getLevel());
 
-        return this.mongoOperations.updateFirst(new Query(), update, Slot.class)
+        Query query = new Query();
+        query.addCriteria(Criteria.where("slotNumber")
+                                  .is(slot.getSlotNumber())
+                                  .and("level")
+                                  .is(slot.getLevel()));
+
+        return this.mongoOperations.upsert(query, update, Slot.class)
                                    .thenReturn(slot);
     }
 
@@ -97,6 +105,12 @@ public class SlotDao {
                                   .is(slotNumber)
                                   .and("level")
                                   .is(level));
-        return this.mongoOperations.findOne(query, Slot.class);
+        Slot slot = new Slot();
+        slot.setAvailable(true);
+        slot.setLevel(level);
+        slot.setSlotNumber(slotNumber);
+
+        return this.mongoOperations.findOne(query, Slot.class)
+                                   .defaultIfEmpty(slot);
     }
 }

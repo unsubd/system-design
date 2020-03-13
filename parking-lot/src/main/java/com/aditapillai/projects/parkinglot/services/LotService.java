@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @Service
@@ -20,7 +19,7 @@ public class LotService {
     private SlotDao slotDao;
     private CarDao carDao;
     private CacheService cache;
-    @Value("${lot.max-slots:10}")
+    @Value("${lot.slots-per-level:10}")
     private int maxSlotsPerLevel;
 
     /**
@@ -33,30 +32,26 @@ public class LotService {
         int number = LotUtils.getNumber(registrationNumber);
 
         return this.slotDao.findOccupiedSlots(number)
-                           .flatMap(slots -> this.getAvailableSlot(slots, registrationNumber, number))
+                           .flatMap(this::getAvailableSlot)
                            .doOnNext(slot -> this.cache.setUnavailable(slot.getSlotNumber(), slot.getLevel()))
-                           .flatMap(slot -> this.slotDao.bookSlot(slot, registrationNumber, number));
+                           .flatMap(slot -> this.slotDao.bookSlot(slot, registrationNumber, number)
+                                                        .doOnError(error -> this.cache.setAvailable(slot.getSlotNumber()
+                                                                , slot.getLevel())));
+
     }
 
     /**
      * Fetch an available slot to book for the current car
      *
-     * @param slots              all the occupied slots that are of interest
-     * @param registrationNumber the registration number of the car
-     * @param number             numeric number of the car
+     * @param slots all the occupied slots that are of interest
      * @return an available slot
      */
-    private Mono<Slot> getAvailableSlot(List<Slot> slots, String registrationNumber, int number) {
-        boolean isOdd = LotUtils.isOdd(number);
-        Predicate<Slot> levelFilter = slot -> !isOdd || LotUtils.isOdd(slot.getLevel());
-
+    private Mono<Slot> getAvailableSlot(List<Slot> slots) {
         Slot availableSlot = slots.stream()
-                                  .filter(levelFilter)
-                                  .flatMap(this::getAvailableSlots)
+                                  .flatMap(this::getAvailableNeighbors)
                                   .findFirst()
                                   .orElseThrow(() -> new RuntimeException("Slots not available"));
-        return this.slotDao.bookSlot(availableSlot, registrationNumber, number)
-                           .doOnError(error -> this.cache.setAvailable(availableSlot.getSlotNumber(), availableSlot.getLevel()));
+        return Mono.just(availableSlot);
     }
 
     /**
@@ -65,7 +60,7 @@ public class LotService {
      * @param slot the occupied slot whose neighbors need to be checked and returned if available
      * @return Stream of available slots
      */
-    private Stream<Slot> getAvailableSlots(Slot slot) {
+    private Stream<Slot> getAvailableNeighbors(Slot slot) {
         int level = slot.getLevel();
         int slotNumber = slot.getSlotNumber();
 
@@ -78,7 +73,7 @@ public class LotService {
             prevSlot = this.cache.isAvailable(prevSlotNumber, level)
                                  .filter(result -> result)
                                  .doOnNext(result -> this.cache.setUnavailable(prevSlotNumber, level))
-                                 .flatMap(noResult -> this.slotDao.findSlot(prevSlotNumber, level))
+                                 .flatMap(result -> this.slotDao.findSlot(prevSlotNumber, level))
                                  .doOnError(error -> this.cache.setAvailable(prevSlotNumber, level))
                                  .block();
 
