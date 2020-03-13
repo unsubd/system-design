@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.aditapillai.projects.parkinglot.dao.LookupKeys.*;
+
 @Service
 public class SlotDao {
     private ReactiveMongoOperations mongoOperations;
@@ -29,12 +31,12 @@ public class SlotDao {
      */
     public Mono<Void> unallocateSlotFor(String carRegistrationNumber) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("registrationNumber")
+        query.addCriteria(Criteria.where(REGISTRATION_NUMBER)
                                   .is(carRegistrationNumber));
         Update update = new Update();
-        update.unset("registrationNumber")
-              .set("available", true)
-              .unset("vehicleNumber");
+        update.unset(REGISTRATION_NUMBER)
+              .set(AVAILABLE, true)
+              .unset(VEHICLE_NUMBER);
 
         return this.mongoOperations.updateFirst(query, update, Slot.class)
                                    .flatMap(result -> Mono.empty());
@@ -50,11 +52,11 @@ public class SlotDao {
      */
     public Mono<List<Slot>> findOccupiedSlots(int carNumber) {
         Query query = new Query();
-        Criteria criteria = Criteria.where("available")
+        Criteria criteria = Criteria.where(AVAILABLE)
                                     .is(false);
         boolean isOdd = LotUtils.isOdd(carNumber);
         if (isOdd) {
-            criteria.and("level")
+            criteria.and(LEVEL)
                     .mod(2, 1);
         }
         query.addCriteria(criteria);
@@ -76,16 +78,16 @@ public class SlotDao {
         slot.setRegistrationNumber(registrationNumber);
 
         Update update = new Update();
-        update.set("available", slot.isAvailable())
-              .set("registrationNumber", registrationNumber)
-              .set("vehicleNumber", number)
-              .set("slotNumber", slot.getSlotNumber())
-              .set("level", slot.getLevel());
+        update.set(AVAILABLE, slot.isAvailable())
+              .set(REGISTRATION_NUMBER, registrationNumber)
+              .set(VEHICLE_NUMBER, number)
+              .set(SLOT_NUMBER, slot.getSlotNumber())
+              .set(LEVEL, slot.getLevel());
 
         Query query = new Query();
-        query.addCriteria(Criteria.where("slotNumber")
+        query.addCriteria(Criteria.where(SLOT_NUMBER)
                                   .is(slot.getSlotNumber())
-                                  .and("level")
+                                  .and(LEVEL)
                                   .is(slot.getLevel()));
 
         return this.mongoOperations.upsert(query, update, Slot.class)
@@ -101,9 +103,9 @@ public class SlotDao {
      */
     public Mono<Slot> findSlot(int slotNumber, int level) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("slotNumber")
+        query.addCriteria(Criteria.where(SLOT_NUMBER)
                                   .is(slotNumber)
-                                  .and("level")
+                                  .and(LEVEL)
                                   .is(level));
         Slot slot = new Slot();
         slot.setAvailable(true);

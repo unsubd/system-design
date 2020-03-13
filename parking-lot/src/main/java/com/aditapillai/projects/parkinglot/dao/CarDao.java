@@ -8,6 +8,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import static com.aditapillai.projects.parkinglot.dao.LookupKeys.REGISTRATION_NUMBER;
+
 @Service
 public class CarDao {
     private ReactiveMongoOperations mongoOperations;
@@ -30,7 +32,7 @@ public class CarDao {
      */
     public Mono<Car> delete(String carRegistrationNumber) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("registrationNumber")
+        query.addCriteria(Criteria.where(REGISTRATION_NUMBER)
                                   .is(carRegistrationNumber));
         return this.mongoOperations.findAndRemove(query, Car.class);
     }
