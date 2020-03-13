@@ -21,6 +21,8 @@ public class LotService {
     private CacheService cache;
     @Value("${lot.slots-per-level:10}")
     private int maxSlotsPerLevel;
+    @Value("${lot.levels:5}")
+    private int levels;
 
     /**
      * Allocate a parking slot for the incoming car with the given registration number
@@ -32,8 +34,7 @@ public class LotService {
         int number = LotUtils.getNumber(registrationNumber);
 
         return this.slotDao.findOccupiedSlots(number)
-                           .flatMap(this::getAvailableSlot)
-                           .doOnNext(slot -> this.cache.setUnavailable(slot.getSlotNumber(), slot.getLevel()))
+                           .flatMap(slots -> this.getAvailableSlot(slots, number))
                            .flatMap(slot -> this.slotDao.bookSlot(slot, registrationNumber, number)
                                                         .doOnError(error -> this.cache.setAvailable(slot.getSlotNumber()
                                                                 , slot.getLevel())));
@@ -43,49 +44,79 @@ public class LotService {
     /**
      * Fetch an available slot to book for the current car
      *
-     * @param slots all the occupied slots that are of interest
+     * @param slots  all the occupied slots that are of interest
+     * @param number numeric registration number of the car
      * @return an available slot
      */
-    private Mono<Slot> getAvailableSlot(List<Slot> slots) {
+    private Mono<Slot> getAvailableSlot(List<Slot> slots, int number) {
+        if (slots.isEmpty()) {
+            return this.getFirstApplicableSlot(number);
+        }
+
         Slot availableSlot = slots.stream()
-                                  .flatMap(this::getAvailableNeighbors)
+                                  .flatMap(slot -> this.getAvailableNeighbors(slot.getSlotNumber(), slot.getLevel()))
                                   .findFirst()
-                                  .orElseThrow(() -> new RuntimeException("Slots not available"));
+                                  .orElseThrow(() -> new RuntimeException("All slots booked!"));
+
         return Mono.just(availableSlot);
+    }
+
+    /**
+     * Return the first applicable slot for the given vehicle number
+     *
+     * @param number numeric registration number of the car
+     * @return the applicable slot, or return an error
+     */
+    private Mono<Slot> getFirstApplicableSlot(int number) {
+        int incr = LotUtils.isOdd(number) ? 2: 1;
+
+        for (int level = 1; level <= levels; level += incr) {
+            for (int slot = 1; slot <= maxSlotsPerLevel; slot++) {
+                if (this.cache.isAvailable(slot, level)) {
+                    if (this.cache.setUnavailable(slot, level)) {
+                        final int slotNumber = slot;
+                        final int levelNumber = level;
+
+                        return this.slotDao.findSlot(slot, level)
+                                           .doOnError(error -> this.cache.setAvailable(slotNumber, levelNumber));
+                    }
+                }
+            }
+        }
+
+        return Mono.error(() -> new RuntimeException("No available slots"));
     }
 
     /**
      * Return the available slots that are immediately next to the provided slot
      *
-     * @param slot the occupied slot whose neighbors need to be checked and returned if available
+     * @param slotNumber current slot number whose neighbors need to be checked
+     * @param level      the current level under consideration
      * @return Stream of available slots
      */
-    private Stream<Slot> getAvailableNeighbors(Slot slot) {
-        int level = slot.getLevel();
-        int slotNumber = slot.getSlotNumber();
-
+    private Stream<Slot> getAvailableNeighbors(int slotNumber, int level) {
         int prevSlotNumber = slotNumber - 1;
         int nextSlotNumber = slotNumber + 1;
         Slot prevSlot = null;
         Slot nextSlot = null;
 
         if (prevSlotNumber > 0) {
-            prevSlot = this.cache.isAvailable(prevSlotNumber, level)
-                                 .filter(result -> result)
-                                 .doOnNext(result -> this.cache.setUnavailable(prevSlotNumber, level))
-                                 .flatMap(result -> this.slotDao.findSlot(prevSlotNumber, level))
-                                 .doOnError(error -> this.cache.setAvailable(prevSlotNumber, level))
-                                 .block();
+            prevSlot = Mono.just(this.cache.isAvailable(prevSlotNumber, level))
+                           .filter(result -> result)
+                           .doOnNext(result -> this.cache.setUnavailable(prevSlotNumber, level))
+                           .flatMap(result -> this.slotDao.findSlot(prevSlotNumber, level))
+                           .doOnError(error -> this.cache.setAvailable(prevSlotNumber, level))
+                           .block();
 
         }
 
         if (nextSlotNumber <= maxSlotsPerLevel) {
-            nextSlot = this.cache.isAvailable(nextSlotNumber, level)
-                                 .filter(result -> result)
-                                 .doOnNext(result -> this.cache.setUnavailable(nextSlotNumber, level))
-                                 .flatMap(result -> this.slotDao.findSlot(nextSlotNumber, level))
-                                 .doOnError(error -> this.cache.setAvailable(nextSlotNumber, level))
-                                 .block();
+            nextSlot = Mono.just(this.cache.isAvailable(nextSlotNumber, level))
+                           .filter(result -> result)
+                           .doOnNext(result -> this.cache.setUnavailable(nextSlotNumber, level))
+                           .flatMap(result -> this.slotDao.findSlot(nextSlotNumber, level))
+                           .doOnError(error -> this.cache.setAvailable(nextSlotNumber, level))
+                           .block();
         }
 
         return Stream.of(prevSlot, nextSlot)
