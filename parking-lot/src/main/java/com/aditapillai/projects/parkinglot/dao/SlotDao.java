@@ -76,6 +76,7 @@ public class SlotDao {
     public Mono<Slot> bookSlot(Slot slot, String registrationNumber, int number) {
         slot.setAvailable(false);
         slot.setRegistrationNumber(registrationNumber);
+        slot.setVehicleNumber(number);
 
         Update update = new Update();
         update.set(AVAILABLE, slot.isAvailable())
