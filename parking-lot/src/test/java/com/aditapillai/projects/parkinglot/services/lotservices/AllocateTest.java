@@ -1,7 +1,9 @@
-package com.aditapillai.projects.parkinglot.services;
+package com.aditapillai.projects.parkinglot.services.lotservices;
 
 import com.aditapillai.projects.parkinglot.dao.SlotDao;
 import com.aditapillai.projects.parkinglot.models.Slot;
+import com.aditapillai.projects.parkinglot.services.CacheService;
+import com.aditapillai.projects.parkinglot.services.LotService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

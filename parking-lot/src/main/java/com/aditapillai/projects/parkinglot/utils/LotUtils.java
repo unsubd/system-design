@@ -4,9 +4,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LotUtils {
-    public static Pattern registrationNumberPattern = Pattern.compile("(?<state>[A-Z]{2})(?<rto>\\d{2})" +
+    public static final Pattern registrationNumberPattern = Pattern.compile("^(?<state>[A-Z]{2})(?<rto>\\d{2})" +
             "(?<series>[A-Z]{1,2})" +
-            "(?<number>\\d{1,4})");
+            "(?<number>\\d{1,4})$");
 
     /**
      * Check if the given value is odd
