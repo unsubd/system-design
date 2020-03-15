@@ -1,5 +1,6 @@
-package com.aditapillai.projects.parkinglot.dao;
+package com.aditapillai.projects.parkinglot.dao.slotdao;
 
+import com.aditapillai.projects.parkinglot.dao.SlotDao;
 import com.aditapillai.projects.parkinglot.models.Slot;
 import org.junit.Assert;
 import org.junit.Before;

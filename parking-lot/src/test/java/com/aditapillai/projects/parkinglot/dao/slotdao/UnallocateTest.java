@@ -1,5 +1,6 @@
-package com.aditapillai.projects.parkinglot.dao;
+package com.aditapillai.projects.parkinglot.dao.slotdao;
 
+import com.aditapillai.projects.parkinglot.dao.SlotDao;
 import com.aditapillai.projects.parkinglot.models.Slot;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonBoolean;
@@ -20,7 +21,7 @@ import reactor.core.publisher.Mono;
 import static com.aditapillai.projects.parkinglot.dao.LookupKeys.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BookTest {
+public class UnallocateTest {
     @InjectMocks
     private SlotDao dao;
     @Mock
@@ -29,40 +30,28 @@ public class BookTest {
     @Before
     public void setUp() {
         this.dao.setLevels(3);
-        this.dao.setMaxSlotsPerLevel(4);
+        this.dao.setMaxSlotsPerLevel(2);
     }
 
     @Test
-    public void bookSlotTest() {
-        String regNumber = "KA01AG1100";
-        int num = 1100;
-        Slot slot = new Slot();
-        slot.setLevel(1);
-        slot.setSlotNumber(1);
-        slot.setAvailable(true);
-
-        Update update = new Update();
-        update.set(AVAILABLE, false)
-              .set(REGISTRATION_NUMBER, regNumber)
-              .set(VEHICLE_NUMBER, num)
-              .set(SLOT_NUMBER, 1)
-              .set(LEVEL, 1);
+    public void unallocate() {
+        UpdateResult updateResult = UpdateResult.acknowledged(1, 1L, new BsonBoolean(true));
+        String carRegistrationNumber = "KA01AG1000";
 
         Query query = new Query();
-        query.addCriteria(Criteria.where(SLOT_NUMBER)
-                                  .is(1)
-                                  .and(LEVEL)
-                                  .is(1));
-
-        UpdateResult updateResult = UpdateResult.acknowledged(1, 1L, new BsonBoolean(true));
-
-        Mockito.when(this.mongoOperations.upsert(Mockito.eq(query), Mockito.eq(update), Mockito.eq(Slot.class)))
+        query.addCriteria(Criteria.where(REGISTRATION_NUMBER)
+                                  .is(carRegistrationNumber));
+        Update update = new Update();
+        update.unset(REGISTRATION_NUMBER)
+              .set(AVAILABLE, true)
+              .unset(VEHICLE_NUMBER);
+        Mockito.when(this.mongoOperations.updateFirst(Mockito.eq(query), Mockito.eq(update), Mockito.eq(Slot.class)))
                .thenReturn(Mono.just(updateResult));
-        Slot result = this.dao.bookSlot(slot, regNumber, num)
-                              .block();
+
+        Boolean result = this.dao.unallocateSlotFor(carRegistrationNumber)
+                                 .block();
 
         Assert.assertNotNull(result);
-        Assert.assertEquals(1, result.getLevel());
-        Assert.assertEquals(1, result.getSlotNumber());
+        Assert.assertTrue(result);
     }
 }
