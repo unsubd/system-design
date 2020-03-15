@@ -3,7 +3,6 @@ package com.aditapillai.projects.parkinglot.services.lotservices;
 import com.aditapillai.projects.parkinglot.dao.CarDao;
 import com.aditapillai.projects.parkinglot.models.Car;
 import com.aditapillai.projects.parkinglot.services.LotService;
-import com.aditapillai.projects.parkinglot.utils.LotUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,14 +48,4 @@ public class RegisterTest {
 
     }
 
-    @Test
-    public void testRegistrationPattern() {
-        Assert.assertFalse(LotUtils.registrationNumberPattern.asPredicate()
-                                                             .test("KA01AG11111"));
-        Assert.assertTrue(LotUtils.registrationNumberPattern.asPredicate()
-                                                            .test("KA01AG1111"));
-        Assert.assertEquals(1111, LotUtils.getNumber("KA01AG1111"));
-        Assert.assertFalse(LotUtils.isOdd(2));
-        Assert.assertTrue(LotUtils.isOdd(1));
-    }
 }
