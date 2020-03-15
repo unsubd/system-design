@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 @Component
+@Profile("local")
 public class CLI implements CommandLineRunner {
     private LotService service;
     private ApplicationContext context;
@@ -29,16 +31,19 @@ public class CLI implements CommandLineRunner {
         while (selection != 4) {
             System.out.println("1: Allocate\n2: Register\n3: Release\n4: Quit");
             selection = Integer.parseInt(reader.readLine());
-            this.processSelection(selection, reader)
-                .subscribe(result -> {
-                    try {
-                        System.out.println(this.mapper.writeValueAsString(result));
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                });
+            this.print(this.processSelection(selection, reader)
+                           .block());
         }
         SpringApplication.exit(context);
+    }
+
+    private void print(Object result) {
+        try {
+            System.out.println(this.mapper.writeValueAsString(result));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private Mono processSelection(int selection, BufferedReader reader) throws IOException {
