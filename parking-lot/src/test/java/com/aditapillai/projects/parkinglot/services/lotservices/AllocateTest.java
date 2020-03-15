@@ -144,4 +144,40 @@ public class AllocateTest {
         Assert.assertTrue(result);
     }
 
+    @Test
+    public void allocateNextToClosestCar() {
+        this.service.setLevels(5);
+        this.service.setMaxSlotsPerLevel(4);
+
+        LinkedList<Slot> slots = new LinkedList<>();
+        Slot slot = new Slot();
+        slot.setLevel(2);
+        slot.setSlotNumber(1);
+        slot.setVehicleNumber(1000);
+
+        Slot slot2 = new Slot();
+        slot2.setLevel(2);
+        slot2.setSlotNumber(4);
+        slot2.setVehicleNumber(7000);
+
+        slots.add(slot2);
+        slots.add(slot);
+
+        Slot expected = new Slot();
+        expected.setLevel(2);
+        expected.setSlotNumber(3);
+
+        Mockito.when(this.slotDao.findOccupiedSlots(Mockito.anyInt()))
+               .thenReturn(Mono.just(slots));
+        Mockito.when(this.slotDao.findSlot(Mockito.eq(3), Mockito.eq(2)))
+               .thenReturn(Mono.just(expected));
+        String regNumber = "KA01AG7050";
+        Mockito.when(this.slotDao.bookSlot(Mockito.eq(expected), Mockito.eq(regNumber), Mockito.eq(7050)))
+               .thenReturn(Mono.just(expected));
+        Slot allocatedSlot = this.service.allocate(regNumber)
+                                         .block();
+
+        Assert.assertEquals(expected, allocatedSlot);
+    }
+
 }
