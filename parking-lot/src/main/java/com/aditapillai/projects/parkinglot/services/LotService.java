@@ -19,9 +19,7 @@ public class LotService {
     private SlotDao slotDao;
     private CarDao carDao;
     private CacheService cache;
-    @Value("${lot.slots-per-level:10}")
     private int maxSlotsPerLevel;
-    @Value("${lot.levels:5}")
     private int levels;
 
     /**
@@ -169,5 +167,15 @@ public class LotService {
     @Autowired
     public void setCache(CacheService cache) {
         this.cache = cache;
+    }
+
+    @Value("${lot.levels:5}")
+    public void setLevels(int levels) {
+        this.levels = levels;
+    }
+
+    @Value("${lot.slots-per-level:10}")
+    public void setMaxSlotsPerLevel(int maxSlotsPerLevel) {
+        this.maxSlotsPerLevel = maxSlotsPerLevel;
     }
 }

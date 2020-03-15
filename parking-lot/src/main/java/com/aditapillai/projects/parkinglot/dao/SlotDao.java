@@ -3,6 +3,7 @@ package com.aditapillai.projects.parkinglot.dao;
 import com.aditapillai.projects.parkinglot.models.Slot;
 import com.aditapillai.projects.parkinglot.utils.LotUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -12,12 +13,15 @@ import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.aditapillai.projects.parkinglot.dao.LookupKeys.*;
 
 @Service
 public class SlotDao {
     private ReactiveMongoOperations mongoOperations;
+    private int levels;
+    private int maxSlotsPerLevel;
 
     @Autowired
     public void setMongoOperations(ReactiveMongoOperations mongoOperations) {
@@ -60,9 +64,18 @@ public class SlotDao {
                     .mod(2, 1);
         }
         query.addCriteria(criteria);
+        //TODO: Move convert to aggregate
         return this.mongoOperations.find(query, Slot.class)
-                                   .collectSortedList(Comparator.comparingInt(Slot::getLevel)
-                                                                .thenComparingInt(slot -> Math.abs(slot.getVehicleNumber() - carNumber)));
+                                   .collect(Collectors.groupingBy(Slot::getLevel))
+                                   .map(map -> map.entrySet()
+                                                  .stream()
+                                                  .filter(entry -> entry.getValue()
+                                                                        .size() < maxSlotsPerLevel)
+                                                  .flatMap(entry -> entry.getValue()
+                                                                         .stream())
+                                                  .sorted(Comparator.comparingInt(Slot::getLevel)
+                                                                    .thenComparingInt(slot -> Math.abs(slot.getVehicleNumber() - carNumber)))
+                                                  .collect(Collectors.toList()));
     }
 
     /**
@@ -115,5 +128,15 @@ public class SlotDao {
 
         return this.mongoOperations.findOne(query, Slot.class)
                                    .defaultIfEmpty(slot);
+    }
+
+    @Value("${lot.levels:5}")
+    public void setLevels(int levels) {
+        this.levels = levels;
+    }
+
+    @Value("${lot.slots-per-level:10}")
+    public void setMaxSlotsPerLevel(int maxSlotsPerLevel) {
+        this.maxSlotsPerLevel = maxSlotsPerLevel;
     }
 }
