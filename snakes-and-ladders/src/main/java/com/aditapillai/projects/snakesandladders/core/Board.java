@@ -15,7 +15,7 @@ public class Board {
     public int place(Player player, int roll) {
         int currentPosition = player.getCurrentPosition();
         int finalPosition = currentPosition + roll;
-        if (finalPosition <= 100) {
+        if (finalPosition < this.board.length - 1) {
             Square square = board[finalPosition];
             Snake snake = square.getSnake();
             Ladder ladder = square.getLadder();
@@ -35,14 +35,14 @@ public class Board {
     }
 
     public boolean isLastOccupied() {
-        return this.board[100].isOccupied();
+        return this.board[this.board.length - 1].isOccupied();
     }
 
     public Player getWinner() {
-        return this.board[100].getPlayers()
-                              .stream()
-                              .findFirst()
-                              .orElse(null);
+        return this.board[this.board.length - 1].getPlayers()
+                                                .stream()
+                                                .findFirst()
+                                                .orElse(null);
     }
 
     public Square[] getCurrentBoardClone() {
