@@ -1,0 +1,8 @@
+spring:
+  data:
+    mongodb:
+      database: ttmm
+      port: 27017
+      host: localhost
+  profiles:
+    active: local
