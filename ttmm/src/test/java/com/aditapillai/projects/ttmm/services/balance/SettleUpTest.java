@@ -20,7 +20,7 @@ public class SettleUpTest {
 
     @Test
     public void settleUpTest() {
-        Mockito.when(this.dao.saveAll(Mockito.anyList()))
+        Mockito.when(this.dao.updateBalances(Mockito.anyList()))
                .thenReturn(true);
         boolean result = this.service.settleUp(User.builder()
                                                    .id("1")

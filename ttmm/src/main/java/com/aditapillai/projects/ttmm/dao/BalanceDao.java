@@ -20,11 +20,12 @@ public class BalanceDao {
 
     /**
      * Save all the balances as one bulk operation
+     * For an existing balance, the amount is added to the existing
      *
      * @param balances to be stored
      * @return true if the balances were stored
      */
-    public boolean saveAll(List<Balance> balances) {
+    public boolean upsertBalances(List<Balance> balances) {
         BulkOperations bulkOperations = this.mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, Balance.class);
 
         balances
@@ -34,6 +35,31 @@ public class BalanceDao {
                                           .and(BORROWER)
                                           .is(balance.getBorrower())),
                         new Update().inc(AMOUNT, balance.getAmount())
+                        )
+                );
+
+        bulkOperations.execute();
+
+        return true;
+    }
+
+    /**
+     * Save all the balances as one bulk operation
+     * For an existing balance, the amount is replaced
+     *
+     * @param balances to be stored
+     * @return true if the balances were stored
+     */
+    public boolean updateBalances(List<Balance> balances) {
+        BulkOperations bulkOperations = this.mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, Balance.class);
+
+        balances
+                .forEach(balance -> bulkOperations.upsert(
+                        new Query(Criteria.where(LENDER)
+                                          .is(balance.getLender())
+                                          .and(BORROWER)
+                                          .is(balance.getBorrower())),
+                        new Update().set(AMOUNT, balance.getAmount())
                         )
                 );
 
