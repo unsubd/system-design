@@ -28,12 +28,12 @@ public class BalanceDao {
         BulkOperations bulkOperations = this.mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, Balance.class);
 
         balances
-                .forEach(balance -> bulkOperations.updateOne(
+                .forEach(balance -> bulkOperations.upsert(
                         new Query(Criteria.where(LENDER)
                                           .is(balance.getLender())
                                           .and(BORROWER)
                                           .is(balance.getBorrower())),
-                        new Update().set(AMOUNT, balance.getAmount())
+                        new Update().inc(AMOUNT, balance.getAmount())
                         )
                 );
 
