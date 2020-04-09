@@ -2,6 +2,7 @@ package com.aditapillai.projects.ttmm.models;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,5 +17,6 @@ public class Bill {
     private final List<String> users;
 
     @Id
-    private String id;
+    private final String id = ObjectId.get()
+                                      .toHexString();
 }
