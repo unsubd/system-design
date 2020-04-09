@@ -27,7 +27,7 @@ public class BalanceService {
      * @return true if the balances were successfully stored;
      */
     public boolean storeBalances(List<Balance> balances) {
-        return this.dao.upsertBalances(balances);
+        return this.dao.mergeBalancesWithExisting(balances);
     }
 
     /**
@@ -75,7 +75,7 @@ public class BalanceService {
     public boolean settleUp(User user1, User user2) {
         Balance b1 = new Balance(user1.getId(), user2.getId(), 0);
         Balance b2 = new Balance(user2.getId(), user1.getId(), 0);
-        return this.dao.updateBalances(List.of(b1, b2));
+        return this.dao.saveAll(List.of(b1, b2));
     }
 
     /**

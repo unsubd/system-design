@@ -25,7 +25,7 @@ public class BalanceDao {
      * @param balances to be stored
      * @return true if the balances were stored
      */
-    public boolean upsertBalances(List<Balance> balances) {
+    public boolean mergeBalancesWithExisting(List<Balance> balances) {
         BulkOperations bulkOperations = this.mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, Balance.class);
 
         balances
@@ -50,7 +50,7 @@ public class BalanceDao {
      * @param balances to be stored
      * @return true if the balances were stored
      */
-    public boolean updateBalances(List<Balance> balances) {
+    public boolean saveAll(List<Balance> balances) {
         BulkOperations bulkOperations = this.mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, Balance.class);
 
         balances
