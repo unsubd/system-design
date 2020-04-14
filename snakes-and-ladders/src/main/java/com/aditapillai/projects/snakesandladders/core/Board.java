@@ -15,7 +15,7 @@ public class Board {
     public int place(Player player, int roll) {
         int currentPosition = player.getCurrentPosition();
         int finalPosition = currentPosition + roll;
-        if (finalPosition < this.board.length - 1) {
+        if (finalPosition <= this.board.length - 1) {
             Square square = board[finalPosition];
             Snake snake = square.getSnake();
             Ladder ladder = square.getLadder();
